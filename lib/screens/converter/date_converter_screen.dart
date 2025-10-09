@@ -10,6 +10,7 @@ class DateConverterScreen extends StatefulWidget {
 }
 
 class _DateConverterScreenState extends State<DateConverterScreen> {
+
   final _gregorianDayController = TextEditingController();
   final _gregorianMonthController = TextEditingController();
   final _gregorianYearController = TextEditingController();
@@ -34,20 +35,11 @@ class _DateConverterScreenState extends State<DateConverterScreen> {
 
   void _convertDate() {
     final l10n = AppLocalizations.of(context)!;
-
-    // دالة مساعدة لتنسيق النصوص
-    String formatDate(String template, int day, int month, int year) {
-      return template
-          .replaceAll('{day}', day.toString())
-          .replaceAll('{month}', month.toString())
-          .replaceAll('{year}', year.toString());
-    }
-
     try {
       if (_conversionType == 'gregorian_to_hijri') {
-        final day = int.parse(_gregorianDayController.text.trim());
-        final month = int.parse(_gregorianMonthController.text.trim());
-        final year = int.parse(_gregorianYearController.text.trim());
+        final day = int.parse(_gregorianDayController.text);
+        final month = int.parse(_gregorianMonthController.text);
+        final year = int.parse(_gregorianYearController.text);
 
         final gregorianDate = DateTime(year, month, day);
         if (gregorianDate.year != year ||
@@ -59,21 +51,16 @@ class _DateConverterScreenState extends State<DateConverterScreen> {
         final hijriDate = HijriDateTime.fromGregorian(gregorianDate);
 
         setState(() {
-          _conversionResult = l10n.resultGregorian(
-            gregorianDate.day,
-            gregorianDate.month,
-            gregorianDate.year,
-          );
-
-
+          _conversionResult =
+          'التاريخ الهجري: ${hijriDate.day}/${hijriDate.month}/${hijriDate.year} هـ';
           _hijriDayController.text = hijriDate.day.toString();
           _hijriMonthController.text = hijriDate.month.toString();
           _hijriYearController.text = hijriDate.year.toString();
         });
       } else {
-        final day = int.parse(_hijriDayController.text.trim());
-        final month = int.parse(_hijriMonthController.text.trim());
-        final year = int.parse(_hijriYearController.text.trim());
+        final day = int.parse(_hijriDayController.text);
+        final month = int.parse(_hijriMonthController.text);
+        final year = int.parse(_hijriYearController.text);
 
         final hijriDate = HijriDateTime(year, month: month, day: day);
         if (hijriDate.day != day || hijriDate.month != month) {
@@ -82,12 +69,8 @@ class _DateConverterScreenState extends State<DateConverterScreen> {
         final gregorianDate = hijriDate.toGregorian();
 
         setState(() {
-          _conversionResult = l10n.resultGregorian(
-            gregorianDate.day,
-            gregorianDate.month,
-            gregorianDate.year,
-          );
-
+          _conversionResult =
+          'التاريخ الميلادي: ${gregorianDate.day}/${gregorianDate.month}/${gregorianDate.year} م';
           _gregorianDayController.text = gregorianDate.day.toString();
           _gregorianMonthController.text = gregorianDate.month.toString();
           _gregorianYearController.text = gregorianDate.year.toString();
@@ -96,6 +79,7 @@ class _DateConverterScreenState extends State<DateConverterScreen> {
     } catch (e) {
       setState(() {
         _conversionResult = l10n.errorInvalidDate;
+
       });
     }
   }
