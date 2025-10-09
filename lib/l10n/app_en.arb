@@ -1,0 +1,125 @@
+{
+  "@@locale": "en",
+  "about": "About the app",
+  "aboutMsg": "\"Know My Age\" app calculates your age accurately and shows full details including your next birthday.",
+  "ageResultTitle": "Age Calculation Result",
+  "ageSummary": "{years} years, {months} months, and {days} days",
+  "@ageSummary": {
+    "placeholders": {
+      "years": {},
+      "months": {},
+      "days": {}
+    }
+  },
+  "appShort": "K",
+  "appTitle": "Know My Age",
+  "birthDateDetails": "Birth Date Details",
+  "calculateMyAge": "Calculate My Age",
+  "chooseLanguage": "Choose Language",
+  "chooseTheme": "Choose Theme",
+  "clear": "Clear",
+  "close": "Close",
+  "convert": "Convert",
+  "convertTitle": "Date Conversion",
+  "date": "Date",
+  "dateLabel": "Date: {date}",
+  "@dateLabel": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "day": "Day",
+  "days": "Days",
+  "enterGregorian": "Enter Gregorian date",
+  "enterHijri": "Enter Hijri date",
+  "enterValidNumber": "Please enter a valid number",
+  "enterYourBirthDate": "Enter your birth date",
+  "error": "Error",
+  "errorInvalidDate": "Error: Invalid date",
+  "fieldRequired": "This field is required",
+  "futureDateError": "Birth date cannot be in the future.",
+  "gToH": "Gregorian to Hijri",
+  "gregorian": "Gregorian",
+  "gregorianSubtitle": "We use the Gregorian calendar considering leap years.",
+  "gregorianTip": "Tip: Enter your correct birth date in Gregorian calendar.",
+  "gregorianYearValidation": "Year must be between {startYear} and {endYear}",
+  "@gregorianYearValidation": {
+    "placeholders": {
+      "startYear": {},
+      "endYear": {}
+    }
+  },
+  "hToG": "Hijri to Gregorian",
+  "help": "Help",
+  "helpMsg": "From the main screen you can calculate your age with full details and see your next birthday, and convert between Gregorian and Hijri dates.",
+  "hijri": "Hijri",
+  "hijriDayValidation": "Hijri day must be between 1 and 30",
+  "hijriMonthValidation": "Hijri month must be between 1 and 12",
+  "hijriSubtitle": "Enter the date according to the Hijri calendar.",
+  "hijriTip": "Tip: Enter your correct birth date in Hijri calendar.",
+  "hijriYearValidation": "Hijri year must be between {startYear} and {endYear}",
+  "@hijriYearValidation": {
+    "placeholders": {
+      "startYear": {},
+      "endYear": {}
+    }
+  },
+  "homeTitle": "Know My Age",
+  "hours": "Hours",
+  "invalidDateError": "The entered date is invalid.",
+  "invalidDay": "Invalid day",
+  "invalidMonth": "Invalid month",
+  "minutes": "Minutes",
+  "month": "Month",
+  "navConvert": "Convert",
+  "navHome": "Home",
+  "navSettings": "Settings",
+  "nextBirthday": "Next Birthday",
+  "resultGregorian": "Gregorian date: {day}/{month}/{year} AD",
+  "resultHijri": "Hijri date: {day}/{month}/{year} AH",
+  "seconds": "Seconds",
+  "settingsTitle": "Settings",
+  "share": "Share",
+  "shareResultBody": "🎉 I just calculated my age using \"Know My Age\" app! 🎉\n\nMy detailed age is:\n{years} years, {months} months, and {days} days.\n\nDiscover your age accurately too!\nDownload \"Know My Age\" now.",
+  "@shareResultBody": {
+    "placeholders": {
+      "years": {},
+      "months": {},
+      "days": {}
+    }
+  },
+  "shareResultSubject": "Discover My Age with \"Know My Age\" App",
+  "shareResultTooltip": "Share Result",
+  "splashSubtitle": "Let's calculate your age accurately and smoothly",
+  "splashWelcome": "Welcome to \"Know My Age\" App",
+  "themeDark": "Dark",
+  "themeLight": "Light",
+  "themeSystem": "System Default",
+  "totalDays": "Total Days",
+  "totalHours": "Total Hours",
+  "totalMinutes": "Total Minutes",
+  "totalMonths": "Total Months",
+  "totalSeconds": "Total Seconds",
+  "weekdayFri": "Friday",
+  "weekdayMon": "Monday",
+  "weekdaySat": "Saturday",
+  "weekdaySun": "Sunday",
+  "weekdayThu": "Thursday",
+  "weekdayTue": "Tuesday",
+  "weekdayWed": "Wednesday",
+  "year": "Year",
+  "yourCurrentAge": "Your Current Age",
+  "youWereBorn": "You were born on",
+  "youWereBornOn": "You were born on {dayName}",
+  "@youWereBornOn": {
+    "placeholders": {
+      "dayName": {}
+    }
+  },
+  "yourNextBirthdayWillBeOn": "Your next birthday will be on {dayName}",
+  "@yourNextBirthdayWillBeOn": {
+    "placeholders": {
+      "dayName": {}
+    }
+  }
+}
