@@ -22,13 +22,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_index == 0
-            ? l10n.homeTitle
-            : _index == 1
-                ? l10n.convertTitle
-                : l10n.settingsTitle),
-      ),
+      appBar: AppBar(title: Text(_index == 0 ? l10n.homeTitle : _index == 1 ? l10n.convertTitle : l10n.settingsTitle),),
       body: _pages[_index],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,

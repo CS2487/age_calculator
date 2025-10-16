@@ -13,10 +13,11 @@
   },
   "appShort": "K",
   "appTitle": "Know My Age",
-  "birthDateDetails": "Birth Date Details",
+  "birthDateDetails": "Date of Birth",
   "calculateMyAge": "Calculate My Age",
   "chooseLanguage": "Choose Language",
   "chooseTheme": "Choose Theme",
+  "requiredField": "Required",
   "clear": "Clear",
   "close": "Close",
   "convert": "Convert",
@@ -41,7 +42,6 @@
   "gToH": "Gregorian to Hijri",
   "gregorian": "Gregorian",
   "gregorianSubtitle": "We use the Gregorian calendar considering leap years.",
-  "gregorianTip": "Tip: Enter your correct birth date in Gregorian calendar.",
   "gregorianYearValidation": "Year must be between {startYear} and {endYear}",
   "@gregorianYearValidation": {
     "placeholders": {
@@ -100,6 +100,7 @@
   "totalMinutes": "Total Minutes",
   "totalMonths": "Total Months",
   "totalSeconds": "Total Seconds",
+  "totalWeeks": "Total Weeks",
   "weekdayFri": "Friday",
   "weekdayMon": "Monday",
   "weekdaySat": "Saturday",

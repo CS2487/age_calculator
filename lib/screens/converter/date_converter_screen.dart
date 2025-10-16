@@ -10,41 +10,30 @@ class DateConverterScreen extends StatefulWidget {
 }
 
 class _DateConverterScreenState extends State<DateConverterScreen> {
-
-  final _gregorianDayController = TextEditingController();
-  final _gregorianMonthController = TextEditingController();
-  final _gregorianYearController = TextEditingController();
-
-  final _hijriDayController = TextEditingController();
-  final _hijriMonthController = TextEditingController();
-  final _hijriYearController = TextEditingController();
-
-  String _conversionResult = '';
   String _conversionType = 'gregorian_to_hijri';
 
-  @override
-  void dispose() {
-    _gregorianDayController.dispose();
-    _gregorianMonthController.dispose();
-    _gregorianYearController.dispose();
-    _hijriDayController.dispose();
-    _hijriMonthController.dispose();
-    _hijriYearController.dispose();
-    super.dispose();
-  }
+  int? _gDay;
+  int? _gMonth;
+  int? _gYear;
+
+  int? _hDay;
+  int? _hMonth;
+  int? _hYear;
+
+  String _conversionResult = '';
 
   void _convertDate() {
     final l10n = AppLocalizations.of(context)!;
     try {
       if (_conversionType == 'gregorian_to_hijri') {
-        final day = int.parse(_gregorianDayController.text);
-        final month = int.parse(_gregorianMonthController.text);
-        final year = int.parse(_gregorianYearController.text);
+        if (_gDay == null || _gMonth == null || _gYear == null) {
+          throw Exception('invalid date');
+        }
 
-        final gregorianDate = DateTime(year, month, day);
-        if (gregorianDate.year != year ||
-            gregorianDate.month != month ||
-            gregorianDate.day != day) {
+        final gregorianDate = DateTime(_gYear!, _gMonth!, _gDay!);
+        if (gregorianDate.year != _gYear ||
+            gregorianDate.month != _gMonth ||
+            gregorianDate.day != _gDay) {
           throw Exception('invalid date');
         }
 
@@ -53,62 +42,141 @@ class _DateConverterScreenState extends State<DateConverterScreen> {
         setState(() {
           _conversionResult =
           'التاريخ الهجري: ${hijriDate.day}/${hijriDate.month}/${hijriDate.year} هـ';
-          _hijriDayController.text = hijriDate.day.toString();
-          _hijriMonthController.text = hijriDate.month.toString();
-          _hijriYearController.text = hijriDate.year.toString();
+          _hDay = hijriDate.day;
+          _hMonth = hijriDate.month;
+          _hYear = hijriDate.year;
         });
       } else {
-        final day = int.parse(_hijriDayController.text);
-        final month = int.parse(_hijriMonthController.text);
-        final year = int.parse(_hijriYearController.text);
-
-        final hijriDate = HijriDateTime(year, month: month, day: day);
-        if (hijriDate.day != day || hijriDate.month != month) {
+        if (_hDay == null || _hMonth == null || _hYear == null) {
           throw Exception('invalid hijri date');
         }
+
+        final hijriDate = HijriDateTime(_hYear!, month: _hMonth!, day: _hDay!);
+        if (hijriDate.day != _hDay || hijriDate.month != _hMonth) {
+          throw Exception('invalid hijri date');
+        }
+
         final gregorianDate = hijriDate.toGregorian();
 
         setState(() {
           _conversionResult =
           'التاريخ الميلادي: ${gregorianDate.day}/${gregorianDate.month}/${gregorianDate.year} م';
-          _gregorianDayController.text = gregorianDate.day.toString();
-          _gregorianMonthController.text = gregorianDate.month.toString();
-          _gregorianYearController.text = gregorianDate.year.toString();
+          _gDay = gregorianDate.day;
+          _gMonth = gregorianDate.month;
+          _gYear = gregorianDate.year;
         });
       }
-    } catch (e) {
+    } catch (_) {
       setState(() {
         _conversionResult = l10n.errorInvalidDate;
-
       });
     }
   }
 
-
   void _clearFields() {
-    _gregorianDayController.clear();
-    _gregorianMonthController.clear();
-    _gregorianYearController.clear();
-    _hijriDayController.clear();
-    _hijriMonthController.clear();
-    _hijriYearController.clear();
     setState(() {
+      _gDay = _gMonth = _gYear = null;
+      _hDay = _hMonth = _hYear = null;
       _conversionResult = '';
     });
   }
+
+  List<int> _generateYears(int start, int end) =>
+      List.generate(end - start + 1, (i) => start + i).reversed.toList();
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
 
+    final now = DateTime.now();
+    final currentGregorianYear = now.year;
+    final currentHijriYear = HijriDateTime.now().year;
+
+    final gYears = _generateYears(1900, currentGregorianYear);
+    final hYears = _generateYears(1300, currentHijriYear);
+    final months = List.generate(12, (i) => i + 1);
+    final days = List.generate(31, (i) => i + 1);
+
+    Widget buildDropdown({
+      required String label,
+      required int? value,
+      required List<int> items,
+      required ValueChanged<int?> onChanged,
+    }) {
+      return DropdownButtonFormField<int>(
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        isExpanded: true,
+        value: value,
+        items: items
+            .map((e) => DropdownMenuItem(value: e, child: Text(e.toString())))
+            .toList(),
+        onChanged: onChanged,
+        validator: (val) => val == null ? l10n.requiredField : null,
+      );
+    }
+
+    Widget buildDateSelector({
+      required int? day,
+      required int? month,
+      required int? year,
+      required ValueChanged<int?> onDayChanged,
+      required ValueChanged<int?> onMonthChanged,
+      required ValueChanged<int?> onYearChanged,
+      required String subtitle,
+      required List<int> yearsList,
+    }) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: buildDropdown(
+                        label: l10n.day,
+                        value: day,
+                        items: days,
+                        onChanged: onDayChanged),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: buildDropdown(
+                        label: l10n.month,
+                        value: month,
+                        items: months,
+                        onChanged: onMonthChanged),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: buildDropdown(
+                        label: l10n.year,
+                        value: year,
+                        items: yearsList,
+                        onChanged: onYearChanged),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(subtitle,
+                  style: TextStyle(color: cs.onSurface.withOpacity(.6))),
+            ],
+          ),
+        ),
+      );
+    }
+
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            // 🔹 اختيار نوع التحويل
+            // اختيار نوع التحويل
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(8),
@@ -149,36 +217,35 @@ class _DateConverterScreenState extends State<DateConverterScreen> {
                 ),
               ),
             ),
-
             const SizedBox(height: 16),
 
-            // 🔹 حقول الإدخال
+            // حقول الإدخال
             if (_conversionType == 'gregorian_to_hijri')
-              _buildDateInputs(
-                dayController: _gregorianDayController,
-                monthController: _gregorianMonthController,
-                yearController: _gregorianYearController,
-                dayHint: l10n.day,
-                monthHint: l10n.month,
-                yearHint: l10n.year,
+              buildDateSelector(
+                day: _gDay,
+                month: _gMonth,
+                year: _gYear,
+                onDayChanged: (v) => setState(() => _gDay = v),
+                onMonthChanged: (v) => setState(() => _gMonth = v),
+                onYearChanged: (v) => setState(() => _gYear = v),
                 subtitle: l10n.enterGregorian,
-                cs: cs,
+                yearsList: gYears,
               )
             else
-              _buildDateInputs(
-                dayController: _hijriDayController,
-                monthController: _hijriMonthController,
-                yearController: _hijriYearController,
-                dayHint: l10n.day,
-                monthHint: l10n.month,
-                yearHint: l10n.year,
+              buildDateSelector(
+                day: _hDay,
+                month: _hMonth,
+                year: _hYear,
+                onDayChanged: (v) => setState(() => _hDay = v),
+                onMonthChanged: (v) => setState(() => _hMonth = v),
+                onYearChanged: (v) => setState(() => _hYear = v),
                 subtitle: l10n.enterHijri,
-                cs: cs,
+                yearsList: hYears,
               ),
 
             const SizedBox(height: 20),
 
-            // 🔹 النتيجة
+            // النتيجة
             if (_conversionResult.isNotEmpty)
               Card(
                 color: cs.primary.withOpacity(.1),
@@ -187,28 +254,25 @@ class _DateConverterScreenState extends State<DateConverterScreen> {
                   child: Text(
                     _conversionResult,
                     style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: cs.primary,
-                    ),
+                        fontWeight: FontWeight.bold, color: cs.primary),
                   ),
                 ),
               ),
 
             const SizedBox(height: 20),
 
-            // 🔹 الأزرار
+            // الأزرار
             Row(
               children: [
                 Expanded(
                   child: SizedBox(
                     height: 50,
                     child: OutlinedButton(
+                      onPressed: _clearFields,
                       style: OutlinedButton.styleFrom(
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                            borderRadius: BorderRadius.circular(12)),
                       ),
-                      onPressed: _clearFields,
                       child: Text(l10n.clear, style: const TextStyle(fontSize: 16)),
                     ),
                   ),
@@ -218,12 +282,11 @@ class _DateConverterScreenState extends State<DateConverterScreen> {
                   child: SizedBox(
                     height: 50,
                     child: ElevatedButton(
+                      onPressed: _convertDate,
                       style: ElevatedButton.styleFrom(
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                            borderRadius: BorderRadius.circular(12)),
                       ),
-                      onPressed: _convertDate,
                       child: Text(l10n.convert, style: const TextStyle(fontSize: 16)),
                     ),
                   ),
@@ -236,7 +299,6 @@ class _DateConverterScreenState extends State<DateConverterScreen> {
     );
   }
 
-  // 🔹 أداة لبناء زر اختيار نوع التحويل
   Widget _buildTypeButton({
     required bool isSelected,
     required String text,
@@ -260,65 +322,6 @@ class _DateConverterScreenState extends State<DateConverterScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  // 🔹 أداة لبناء حقول التاريخ
-  Widget _buildDateInputs({
-    required TextEditingController dayController,
-    required TextEditingController monthController,
-    required TextEditingController yearController,
-    required String dayHint,
-    required String monthHint,
-    required String yearHint,
-    required String subtitle,
-    required ColorScheme cs,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: dayController,
-                decoration: InputDecoration(
-                  hintText: dayHint,
-                  prefixIcon: const Icon(Icons.calendar_today),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: TextField(
-                controller: monthController,
-                decoration: InputDecoration(
-                  hintText: monthHint,
-                  prefixIcon: const Icon(Icons.date_range),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: TextField(
-                controller: yearController,
-                decoration: InputDecoration(
-                  hintText: yearHint,
-                  prefixIcon: const Icon(Icons.calendar_month),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Text(
-          subtitle,
-          style: TextStyle(color: cs.onSurface.withOpacity(.6)),
-        ),
-      ],
     );
   }
 }
