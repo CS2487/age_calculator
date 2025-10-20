@@ -1,0 +1,811 @@
+import 'package:age_calculator/utils/custom_dialog.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:hijri_date_time/hijri_date_time.dart';
+import 'package:intl/intl.dart' as intl;
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'dart:async';
+
+import 'package:share_plus/share_plus.dart';
+
+class AgeResultScreen extends StatefulWidget {
+  final Map<String, dynamic> ageDetails;
+  final Map<String, dynamic> nextBirthdayInfo;
+  final DateTime birthDate;
+  final HijriDateTime? hijriBirthDate;
+  final String calendarType;
+
+  const AgeResultScreen({
+    super.key,
+    required this.ageDetails,
+    required this.nextBirthdayInfo,
+    required this.birthDate,
+    this.hijriBirthDate,
+    required this.calendarType,
+  });
+
+  @override
+  State<AgeResultScreen> createState() => _AgeResultScreenState();
+}
+
+class _AgeResultScreenState extends State<AgeResultScreen> {
+  Timer? _ticker;
+  Duration _remaining = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTicker();
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  void _startTicker() {
+    final next = widget.nextBirthdayInfo['date'] as DateTime;
+    _remaining = next.difference(DateTime.now());
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      final diff = next.difference(DateTime.now());
+      if (!mounted) return;
+      setState(() => _remaining = diff.isNegative ? Duration.zero : diff);
+    });
+  }
+
+  void _shareResult() {
+    final l10n = AppLocalizations.of(context)!;
+    final years = widget.ageDetails['years'];
+    final months = widget.ageDetails['months'];
+    final days = widget.ageDetails['days'];
+
+    final String shareText = l10n.shareResultBody(years, months, days);
+    Share.share(shareText, subject: l10n.shareResultSubject);
+  }
+
+  String _getHijriDayName(HijriDateTime hijriDate, String locale) {
+    final gregorianDate = hijriDate.toGregorian();
+    return intl.DateFormat('EEEE', locale).format(gregorianDate);
+  }
+
+  // دالة مساعدة لإنشاء صف عرض النتيجة
+  Widget _buildResultRow(String title, String value, ColorScheme cs, IconData icon) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: cs.primary, size: 20),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$title:',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface.withOpacity(.7),
+                ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l10n.ageResultTitle),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share_outlined),
+            onPressed: _shareResult,
+            tooltip: l10n.shareResultTooltip,
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(
+          children: [
+            _ageHeroCard(cs, l10n),
+            const SizedBox(height: 16),
+            // **تم إزالة _birthDateDetails**
+            _statsGrid(cs, l10n),
+            const SizedBox(height: 16),
+            _nextBirthdayCard(cs, l10n),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ------------------------
+  // Inner Widgets
+  // ------------------------
+
+  Widget _ageHeroCard(ColorScheme cs, AppLocalizations l10n) {
+    final age = widget.ageDetails;
+    final locale = l10n.localeName;
+
+    // دالة مساعدة لتنسيق العرض المطلوب (يجب إضافة Localization Keys المناسبة)
+    String formatAgePart(int value, String unit) {
+      if (value == 0) return '';
+      return '$value $unit'; // مثال مبسط
+    }
+
+    // تنسيق التاريخ المطلوب: 01 - 01 - 2025
+    final birthDateFormatted = intl.DateFormat('dd - MM - yyyy', locale).format(widget.birthDate);
+    // تنسيق يوم الميلاد: الأربعاء، 1 يناير 2025
+    final birthDayDetailsFormatted = intl.DateFormat('EEEE، d MMMM yyyy', locale).format(widget.birthDate);
+
+    // يتم هنا استخدام تنسيق نصي مباشر لعدم وجود Localization Keys
+    final String currentAgeSummary =
+        '${formatAgePart(age['years'], l10n.years)}، ${formatAgePart(age['months'], l10n.months)}، ${formatAgePart(age['days'], l10n.days)}';
+
+    final String ageInMonthsSummary =
+        '${formatAgePart(age['totalMonths'], l10n.months)}، ${formatAgePart(age['days'], l10n.days)}';
+
+    final String ageInWeeksSummary =
+        '${formatAgePart(age['totalWeeks'], l10n.weeks)}، ${formatAgePart(age['remainingDaysForWeeks'], l10n.days)}';
+
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // تاريخ ميلادك
+            _buildResultRow(
+                l10n.yourBirthDate,
+                birthDateFormatted,
+                cs,
+                Icons.cake_outlined
+            ),
+            const SizedBox(height: 8),
+            // يوم ميلادك
+            _buildResultRow(
+                l10n.birthDayLabel,
+                birthDayDetailsFormatted,
+                cs,
+                Icons.calendar_today
+            ),
+            const Divider(height: 24),
+
+            // عمرك الحالي
+            _buildResultRow(
+              l10n.yourCurrentAge,
+              currentAgeSummary,
+              cs,
+              Icons.hourglass_bottom_rounded,
+            ),
+            const SizedBox(height: 8),
+
+            // عمرك بالأيام
+            _buildResultRow(
+              l10n.ageInDays,
+              '${age['totalDays']} ${l10n.days}',
+              cs,
+              Icons.today_rounded,
+            ),
+            const SizedBox(height: 8),
+
+            // عمرك بالشهور (الكلية)
+            _buildResultRow(
+              l10n.ageInMonths,
+              ageInMonthsSummary,
+              cs,
+              Icons.calendar_view_month_rounded,
+            ),
+            const SizedBox(height: 8),
+
+            // عمرك بالأسبوع
+            _buildResultRow(
+              l10n.ageInWeeks,
+              ageInWeeksSummary,
+              cs,
+              Icons.calendar_view_week_rounded,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _birthDateDetails(ColorScheme cs, AppLocalizations l10n) {
+    // تم دمج المحتوى في _ageHeroCard. هذا الويدجيت يرجع فراغاً لتجنب أي أخطاء إذا كان لا يزال مستدعاً.
+    return const SizedBox.shrink();
+  }
+
+  Widget _statsGrid(ColorScheme cs, AppLocalizations l10n) {
+    final age = widget.ageDetails;
+    final items = [
+      // تم إزالة totalMonths و totalDays لتجنب التكرار في العرض
+      (l10n.totalHours, Icons.access_time_rounded,
+      age['totalHours'].toString()),
+      (l10n.totalMinutes, Icons.timer_rounded,
+      age['totalMinutes'].toString()),
+      (l10n.totalSeconds, Icons.alarm_rounded, // استخدام أيقونة بديلة
+      age['totalSeconds'].toString()),
+    ];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: LayoutBuilder(builder: (context, c) {
+          final isNarrow = c.maxWidth < 360;
+          final cross = isNarrow ? 2 : 3;
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: items.length,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: cross,
+              mainAxisExtent: 92,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+            ),
+            itemBuilder: (_, i) {
+              final (title, icon, value) = items[i];
+              return _statTile(title, icon, value, cs);
+            },
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _statTile(String title, IconData icon, String value, ColorScheme cs) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cs.outline.withOpacity(.2)),
+      ),
+      padding: const EdgeInsets.all(10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(icon, color: cs.primary),
+            const Spacer(),
+            Text(value,
+                style:
+                const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+          ]),
+          const Spacer(),
+          Text(title,
+              style:
+              TextStyle(color: cs.onSurface.withOpacity(.7), fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Widget _nextBirthdayCard(ColorScheme cs, AppLocalizations l10n) {
+    final locale = l10n.localeName;
+    final nextBirthdayDate = widget.nextBirthdayInfo['date'] as DateTime;
+    final remainingDays = widget.nextBirthdayInfo['remainingDays'] as int;
+
+    // تنسيق التاريخ المطلوب: 01 - 01 - 2026
+    final nextBirthdayDateFormatted = intl.DateFormat('dd - MM - yyyy', locale).format(nextBirthdayDate);
+    // تنسيق يوم الميلاد القادم: الخميس، 1 يناير 2026
+    final nextBirthdayDetailsFormatted = intl.DateFormat('EEEE، d MMMM yyyy', locale).format(nextBirthdayDate);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                    color: cs.primary.withOpacity(.12),
+                    borderRadius: BorderRadius.circular(10)),
+                child: Icon(Icons.event_available_outlined, color: cs.primary),
+              ),
+              const SizedBox(width: 10),
+              Text(l10n.nextBirthday,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // تاريخ ميلادك القادم
+          _buildResultRow(
+            l10n.nextBirthDateLabel,
+            nextBirthdayDateFormatted,
+            cs,
+            Icons.date_range,
+          ),
+          const SizedBox(height: 8),
+
+          // يوم ميلادك القادم
+          _buildResultRow(
+            l10n.nextBirthDayLabel,
+            nextBirthdayDetailsFormatted,
+            cs,
+            Icons.calendar_month,
+          ),
+          const SizedBox(height: 8),
+
+          // الأيام المتبقية لعيد ميلادك القادم
+          _buildResultRow(
+            l10n.remainingDaysToNextBirthday,
+            '${remainingDays} ${l10n.days}',
+            cs,
+            Icons.timer_outlined,
+          ),
+          const SizedBox(height: 12),
+
+          _countdownStrip(cs, l10n),
+        ]),
+      ),
+    );
+  }
+
+  Widget _countdownStrip(ColorScheme cs, AppLocalizations l10n) {
+    final days = _remaining.inDays;
+    final hours = _remaining.inHours % 24;
+    final minutes = _remaining.inMinutes % 60;
+    final seconds = _remaining.inSeconds % 60;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cs.primary.withOpacity(.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cs.primary.withOpacity(.25)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _timeBox(l10n.days, days),
+          const Text(':',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          _timeBox(l10n.hours, hours),
+          const Text(':',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          _timeBox(l10n.minutes, minutes),
+          const Text(':',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          _timeBox(l10n.seconds, seconds),
+        ],
+      ),
+    );
+  }
+
+  Widget _timeBox(String label, int value) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(value.toString().padLeft(2, '0'),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 2),
+        Text(label, style: const TextStyle(fontSize: 12)),
+      ],
+    );
+  }
+}
+
+class HomeScreen extends StatefulWidget {
+//... (بقية كود HomeScreen)
+// ...
+// ... الكود التالي هو الكود الذي يحتوي على دالة _calculateDetailedAge
+// ...
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _dayController = TextEditingController();
+  final _monthController = TextEditingController();
+  final _yearController = TextEditingController();
+
+  bool _isSubmitting = false;
+  String _calendarType = 'gregorian';
+
+  @override
+  void dispose() {
+    _dayController.dispose();
+    _monthController.dispose();
+    _yearController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+
+    return SafeArea(
+      child: Scaffold(
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                _headerCard(l10n),
+                const SizedBox(height: 16),
+                _calendarTypeSelector(l10n),
+                const SizedBox(height: 16),
+                _buildDateFields(l10n),
+                const SizedBox(height: 24),
+                _buildCalculateButton(l10n),
+                const SizedBox(height: 8),
+                Text(
+                  _calendarType == 'gregorian'
+                      ? l10n.gregorianTip
+                      : l10n.hijriTip,
+                  style: TextStyle(color: cs.onSurface.withOpacity(.6)),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _headerCard(AppLocalizations l10n) {
+    final cs = Theme.of(context).colorScheme;
+    final subtitle = _calendarType == 'gregorian'
+        ? l10n.gregorianSubtitle
+        : l10n.hijriSubtitle;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: cs.primary.withOpacity(.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.cake_rounded, color: cs.primary, size: 28),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.enterYourBirthDate,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: cs.onSurface.withOpacity(.7)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _calendarTypeSelector(AppLocalizations l10n) {
+    final cs = Theme.of(context).colorScheme;
+
+    Widget buildOption(String title, String type) {
+      final selected = _calendarType == type;
+      return Expanded(
+        child: InkWell(
+          onTap: () => _onCalendarTypeChanged(type),
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: selected ? cs.primary.withOpacity(.1) : null,
+              borderRadius: BorderRadius.circular(10),
+              border: selected ? Border.all(color: cs.primary) : null,
+            ),
+            child: Center(
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: selected ? cs.primary : cs.onSurface.withOpacity(.8),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          children: [
+            buildOption(l10n.gregorian, 'gregorian'),
+            const SizedBox(width: 8),
+            buildOption(l10n.hijri, 'hijri'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateFields(AppLocalizations l10n) {
+    final now = DateTime.now();
+    const int minGregorianYear = 1990; // الحد الأقصى المطلوب بالتقويم الميلادي
+
+    // تحديد الحد الأقصى الهجري المقابل لـ 1990/1/1 ميلادي
+    // 1 يناير 1990 يوافق 4 جمادى الآخرة 1410 هجري
+    const int minHijriYear = 1410;
+
+    final currentGregorianYear = now.year;
+    final currentHijriYear = HijriDateTime.now().year;
+
+    // توليد قائمة السنوات بناءً على التقويم المختار والحد الأدنى الجديد (1990 / 1410)
+    final years = _calendarType == 'gregorian'
+        ? List.generate(currentGregorianYear - minGregorianYear + 1, (i) => minGregorianYear + i).reversed.toList()
+        : List.generate(currentHijriYear - minHijriYear + 1, (i) => minHijriYear + i).reversed.toList();
+
+    final months = List.generate(12, (i) => i + 1);
+    final days = List.generate(31, (i) => i + 1);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: _buildDropdown<int>(
+                label: l10n.day,
+                value: int.tryParse(_dayController.text),
+                items: days,
+                onChanged: (val) {
+                  _dayController.text = val.toString();
+                  setState(() {});
+                },
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildDropdown<int>(
+                label: l10n.month,
+                value: int.tryParse(_monthController.text),
+                items: months,
+                onChanged: (val) {
+                  _monthController.text = val.toString();
+                  setState(() {});
+                },
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildDropdown<int>(
+                label: l10n.year,
+                value: int.tryParse(_yearController.text),
+                // يتم توليد القائمة من 1990 (أو 1410) حتى السنة الحالية
+                items: years,
+                onChanged: (val) {
+                  _yearController.text = val.toString();
+                  setState(() {});
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  Widget _buildDropdown<T>({
+    required String label,
+    required List<T> items,
+    required ValueChanged<T?> onChanged,
+    T? value,
+  }) {
+    return DropdownButtonFormField<T>(
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+      isExpanded: true,
+      value: value,
+      items: items
+          .map((e) => DropdownMenuItem(
+        value: e,
+        child: Text(e.toString()),
+      ))
+          .toList(),
+      onChanged: onChanged,
+      validator: (val) {
+        if (val == null) return 'مطلوب';
+        return null;
+      },
+    );
+  }
+
+
+  void _onCalendarTypeChanged(String type) {
+    setState(() {
+      _calendarType = type;
+      _formKey.currentState?.reset();
+      _dayController.clear();
+      _monthController.clear();
+      _yearController.clear();
+    });
+  }
+
+  Widget _buildCalculateButton(AppLocalizations l10n) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        icon: _isSubmitting
+            ? const SizedBox(
+          height: 18,
+          width: 18,
+          child: CircularProgressIndicator(
+              strokeWidth: 2, color: Colors.white),
+        )
+            : const Icon(Icons.calculate_rounded),
+        label: Text(l10n.calculateMyAge),
+        onPressed: _isSubmitting ? null : _onCalculatePressed,
+      ),
+    );
+  }
+
+  Future<void> _onCalculatePressed() async {
+    HapticFeedback.lightImpact();
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _isSubmitting = true);
+    await Future.delayed(const Duration(milliseconds: 250));
+    _processCalculation(context);
+    setState(() => _isSubmitting = false);
+  }
+
+  void _processCalculation(BuildContext context) {
+    final y = int.parse(_yearController.text);
+    final m = int.parse(_monthController.text);
+    final d = int.parse(_dayController.text);
+    final l10n = AppLocalizations.of(context)!;
+
+    try {
+      DateTime birthDate;
+      HijriDateTime? hijriBirthDate;
+
+      if (_calendarType == 'gregorian') {
+        birthDate = DateTime(y, m, d);
+        hijriBirthDate = HijriDateTime.fromGregorian(birthDate);
+      } else {
+        hijriBirthDate = HijriDateTime(y, month: m, day: d);
+        birthDate = hijriBirthDate.toGregorian();
+      }
+
+      if (birthDate.isAfter(DateTime.now())) {
+        _showErrorDialog(context, l10n.futureDateError);
+        return;
+      }
+
+      final ageDetails = _calculateDetailedAge(birthDate);
+      final nextBirthday = _calculateNextBirthday(birthDate);
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AgeResultScreen(
+            ageDetails: ageDetails,
+            nextBirthdayInfo: nextBirthday,
+            birthDate: birthDate,
+            hijriBirthDate: hijriBirthDate,
+            calendarType: _calendarType,
+          ),
+        ),
+      );
+    } catch (_) {
+      _showErrorDialog(context, l10n.invalidDateError);
+    }
+  }
+
+  Map<String, dynamic> _calculateDetailedAge(DateTime birthDate) {
+    final now = DateTime.now();
+    int years = now.year - birthDate.year;
+    int months = now.month - birthDate.month;
+    int days = now.day - birthDate.day;
+
+    if (days < 0) {
+      months--;
+      final prevMonthLastDay = DateTime(now.year, now.month, 0).day;
+      days += prevMonthLastDay;
+    }
+    if (months < 0) {
+      years--;
+      months += 12;
+    }
+
+    // --- FIX: تصحيح فرق اليوم الزائد ---
+    // طرح يوم واحد من الأيام المحسوبة لتمثيل عدد الأيام الكاملة المكتملة
+    if (days > 0) {
+      days--;
+    }
+    // ---------------------------------
+
+    final diff = now.difference(birthDate);
+    final totalDays = diff.inDays;
+
+    // حساب الأسابيع والأيام المتبقية
+    final totalWeeks = totalDays ~/ 7;
+    final remainingDaysForWeeks = totalDays % 7;
+
+
+    return {
+      'years': years,
+      'months': months,
+      'days': days,
+      'totalMonths': years * 12 + months,
+      'totalDays': totalDays,
+      'totalHours': diff.inHours,
+      'totalMinutes': diff.inMinutes,
+      'totalSeconds': diff.inSeconds,
+      // القيم الجديدة المطلوبة للعرض التفصيلي
+      'totalWeeks': totalWeeks,
+      'remainingDaysForWeeks': remainingDaysForWeeks,
+    };
+  }
+
+  Map<String, dynamic> _calculateNextBirthday(DateTime birthDate) {
+    final now = DateTime.now();
+    DateTime next = DateTime(now.year, birthDate.month, birthDate.day);
+    if (!next.isAfter(now)) {
+      next = DateTime(now.year + 1, birthDate.month, birthDate.day);
+    }
+    // الأيام المتبقية: +1 لحساب اليوم الحالي في العد التنازلي
+    final remainingDays = next.difference(DateTime.now()).inDays + 1;
+
+    return {
+      'date': next,
+      'dayOfWeek': intl.DateFormat('EEEE').format(next),
+      'remainingDays': remainingDays, // تم إضافة الأيام المتبقية
+    };
+  }
+
+  void _showErrorDialog(BuildContext context, String msg) {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (_) => CustomDialog(
+        title: l10n.error,
+        message: msg,
+        icon: Icons.error_outline,
+        onClose: () => Navigator.pop(context),
+      ),
+    );
+  }
+}
+
