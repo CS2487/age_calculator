@@ -9,9 +9,7 @@
 
 ## 📸 Screenshots
 
-|------------------|-----------------|--------------|--------------------------|
 
-| Home | Con | Settings |
-|---------|---------|---------|
 | ![Morning](https://github.com/CS2487/age_calculator/blob/main/ScreenShoot/Screenshot1.jpg.jpg?raw=true) | ![Evening](https://github.com/CS2487/age_calculator/blob/main/ScreenShoot/Screenshot2.jpg.jpg?raw=true) | ![Settings](https://github.com/CS2487/age_calculator/blob/main/ScreenShoot/Screenshot3.jpg?raw=true) |
+
 
